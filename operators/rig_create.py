@@ -70,6 +70,10 @@ class GenerateRig(bpy.types.Operator):
         center = tall * 30.5
         armlocz = tall * 47
         armlocx = 0
+        # 3. Axis vectors
+        x_axis = mathutils.Vector((1, 0, 0))
+        y_axis = mathutils.Vector((0, 1, 0))
+        z_axis = mathutils.Vector((0, 0, 1))
 
         matrixworld = human.matrix_world
         allverts = [matrixworld @ v.co for v in human.data.vertices]
@@ -120,17 +124,19 @@ class GenerateRig(bpy.types.Operator):
             # print(editbones[bn], editbones[bn].length)
             i += 1
 
-           
+        #********************************************************#
         # ----------------------------------arms------------------#
         # allverts2 = [v for v in human.data.vertices if v.co.x > 0]
         arms = ["shoulder.L", "upper_arm.L", "forearm.L", "hand.L"]
         armsh = []
         for arm in arms:
             armsh.append(editbones[arm])
+            editbones[arm].color.palette = "THEME05"
+            editbones[arm].envelope_distance = editbones[arm].length / 4
+
         # --------------arm pit ------shoulder------
        
 
-        mylist = [mathutils.Vector((0,0,0))]
         allv = [v for v in allverts2 if v.co.x> tall*3.5]
         zz = max(allv, key=lambda v: v.co.z )
         zzz=zz.co.copy()
@@ -138,7 +144,6 @@ class GenerateRig(bpy.types.Operator):
         zzz.z -= tall*2
         
         armsh[1].head = zzz
-
         armsh[0].tail = armsh[1].head
         armsh[0].head = armsh[1].head + mathutils.Vector((-tall * 4, 0, 0))
         armsh[0].tail.z += tall
@@ -147,6 +152,8 @@ class GenerateRig(bpy.types.Operator):
 
         handvert = [v.co for v in allverts2 if abs(v.co.x - width) < tall]
         handy = max(handvert, key=lambda v: v.x)
+        handz = max(handvert, key=lambda v: v.z)
+        armz=zzz-handz
         # handy.y = handy.y - tall * 2
         editbones["hand.L"].tail = handy
 
@@ -170,24 +177,30 @@ class GenerateRig(bpy.types.Operator):
 
         # -------------------legs-------------------------------#
         legs = ["thigh.L", "shin.L", "foot.L", "toe.L"]
-        editbones["thigh.L"].head = editbones["spine"].head
-        editbones["thigh.L"].head.x = 2.5 * tall
-
+        legsh = []
+        for leg in legs:
+            legsh.append(editbones[leg])
+            editbones[leg].color.palette = "THEME11"
+            editbones[leg].envelope_distance = editbones[leg].length / 4
+        # ------------------------thigh------
+        legsh[0].head = editbones["spine"].head
+        legsh[0].head.x = 2.5 * tall
+        #---------shin----------knee----------------
         kneevert = [v for v in allverts if abs(v.z - tall * 15) < tall and v.x > 0]
         kneey = min(kneevert, key=lambda v: v.y)
         kneey.y = kneey.y + tall
-        editbones["thigh.L"].tail = kneey
-
+        legsh[0].tail = kneey
+        #----------------ankle-foot----------------
         anklevert = [v for v in allverts if abs(v.z - tall * 4) < tall and v.x > 0]
         anklez = min(anklevert, key=lambda v: v.y)
         anklez.y = anklez.y + tall * 1.5
-        editbones["shin.L"].tail = anklez
-
+        legsh[1].tail = anklez
+        #-----------------foot---toe-------------
         toevert = [v for v in allverts if abs(v.z - tall) < tall and v.x > 0]
         toey = min(toevert, key=lambda v: v.y)
         toey.y = toey.y + tall * 2
-        editbones["foot.L"].tail = toey
-        editbones["toe.L"].tail = toey - mathutils.Vector((0, 2 * tall, 0))
+        legsh[2].tail = toey
+        legsh[3].tail = toey - mathutils.Vector((0, 2 * tall, 0))
 
         # for bn in arms:
         #     if not bn in orjbn:
